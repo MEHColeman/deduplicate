@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+require_relative 'lib/duplicate_file_cleaner'
+require_relative 'lib/cache_manager'
+require_relative 'lib/config_loader'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: depuplicate [options] <yaml_file>"
+
+  opts.on("--dry-run", "Dry run mode. No files will be deleted.") do
+    options[:dry_run] = true
+  end
+
+  opts.on("--verbose", "Show progress of files being processed.") do
+    options[:verbose] = true
+  end
+end.parse!
+
+yaml_file = ARGV[0]
+if yaml_file.nil?
+  puts "Please specify the YAML file containing the directories."
+  exit 1
+end
+
+puts "Initializing Cache"
+cache_manager = CacheManager.new('hash_cache.json')
+
+puts "Loading directories"
+directories = ConfigLoader.load_directories_from_yaml(yaml_file)
+
+puts "Creating Cleaner"
+cleaner = DuplicateFileCleaner.new(cache_manager)
+
+puts "Deduplicating"
+cleaner.process_duplicates(directories, options[:dry_run], options[:verbose])
